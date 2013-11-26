@@ -1,16 +1,28 @@
 import urllib
-import xml.etree.ElementTree as ET
+from lxml import etree
+import re
+import time
 
 url = 'http://export.arxiv.org/oai2/request?verb=ListRecords&metadataPrefix=arXiv&from=2013-11-03&until=2013-11-19'
 initialData = urllib.urlopen(url).read()
 saveFile = open('metadata.xml','a')
 saveFile.write(initialData)
-saveFile.write('\n') #don't know structure of XML files-need to see if have newlines
+saveFile.write('\n') 
 saveFile.close()
-xmlTree = ET.fromstring(initialData)
-curToken = xmlTree.find("OAI-PMH/ListRecords/resumptionToken")
-tokenType = type(curToken)
-print tokenType
+curToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', initialData);
+print curToken.group(1)
+time.sleep(30)
+url2 = 'http://export.arxiv.org/oai2/request?verb=ListRecords&resumptionToken=%s' % (curToken.group(1))
+secondaryData = urllib.urlopen(url).read()
+saveFile2 = open('metadata.xml','a')
+saveFile2.write(secondaryData)
+saveFile2.write('\n') 
+saveFile2.close()
+print re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', secondaryData);
+#root = etree.parse(initialData)
+#curToken = root.xpath('//xsi:OAI-PMH/ListRecords/resumptionToken')
+
+#print curToken[0].text
 '''
 tokenFile = open('resumptionTokens.csv','a')
 tokenFile.write(curToken)
