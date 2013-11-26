@@ -3,6 +3,40 @@ from lxml import etree
 import re
 import time
 
+def readTillFail(initialToken):
+    print "Beginning parsing of data using resumption tokens"
+    thisToken = initialToken
+    n = 1
+    while (thisToken):
+        thisToken = fetchData(thisToken)
+        if (thisToken =="NOTHING"):
+            print "Parsing returned no more values" 
+            break
+        else:
+            print "Parse round " + str(n)
+            n += 1
+            time.sleep(30)
+    print "Done parsing this round of data"
+
+def fetchData(resToken):
+    print "Fetching data"
+    url = 'http://export.arxiv.org/oai2/request?verb=ListRecords&resumptionToken=%s' % (resToken)
+    data = urllib.urlopen(url).read()
+    saveFile = open('metadata.xml','a')
+    saveFile.write(data)
+    saveFile.write('\n')
+    saveFile.close()
+    newToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', data)
+    if (newToken == None):
+        return "NOTHING"
+    else: 
+        #Writing the resumption tokens to a CSV file in case of data failure
+        tokenFile = open('resumptionTokens.csv','a')
+        tokenFile.write(newToken.group(1))
+        tokenFile.write('\n')
+        tokenFile.close()
+        return newToken.group(1)
+    
 url = 'http://export.arxiv.org/oai2/request?verb=ListRecords&metadataPrefix=arXiv&from=2013-11-03&until=2013-11-19'
 initialData = urllib.urlopen(url).read()
 saveFile = open('metadata.xml','a')
@@ -10,25 +44,14 @@ saveFile.write(initialData)
 saveFile.write('\n') 
 saveFile.close()
 curToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', initialData);
-print curToken.group(1)
-time.sleep(30)
-url2 = 'http://export.arxiv.org/oai2/request?verb=ListRecords&resumptionToken=%s' % (curToken.group(1))
-secondaryData = urllib.urlopen(url).read()
-saveFile2 = open('metadata.xml','a')
-saveFile2.write(secondaryData)
-saveFile2.write('\n') 
-saveFile2.close()
-print re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', secondaryData);
-#root = etree.parse(initialData)
-#curToken = root.xpath('//xsi:OAI-PMH/ListRecords/resumptionToken')
+readTillFail(curToken)
+print "Done parsing data"
 
-#print curToken[0].text
+
+
+
+
 '''
-tokenFile = open('resumptionTokens.csv','a')
-tokenFile.write(curToken)
-tokenFile.write('\n')
-tokenFile.close()
-print curToken
 
 
 hasResToken = True
