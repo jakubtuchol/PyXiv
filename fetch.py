@@ -8,19 +8,21 @@ def readTillFail(initialToken):
     thisToken = initialToken
     n = 1
     while (thisToken):
-        thisToken = fetchData(thisToken)
-        if (thisToken =='NOTHING'):
+        someToken  = fetchData(thisToken)
+        if (someToken == -1):
             print "Parsing returned no more values" 
             break
         else:
             print "Parse round " + str(n)
-            print "Will be using resumption token %s" % (thisToken.group(1))
+            print "Will be using resumption token %s" % (someToken)
             n += 1
+            thisToken = someToken
         time.sleep(30)
-        print "Done parsting %i rounds of data" % (n)
+        print "Done parsing %i rounds of data" % (n)
     print "Done parsing this round of data"
 
 def fetchData(resToken):
+    time.sleep(30)
     print "Fetching data"
     url = 'http://export.arxiv.org/oai2/request?verb=ListRecords&resumptionToken=%s' % (resToken)
     data = urllib.urlopen(url).read()
@@ -29,8 +31,9 @@ def fetchData(resToken):
     saveFile.write('\n')
     saveFile.close()
     newToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', data)
+    print "Our current token is " + str(newToken)
     if (newToken == None):
-        return 'NOTHING'
+        return -1
     else: 
         #Writing the resumption tokens to a CSV file in case of data failure
         tokenFile = open('resumptionTokens.csv','a')
@@ -46,5 +49,5 @@ saveFile.write(initialData)
 saveFile.write('\n') 
 saveFile.close()
 curToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', initialData);
-readTillFail(curToken)
+readTillFail(curToken.group(1))
 print "Done parsing data"
