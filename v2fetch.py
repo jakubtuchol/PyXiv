@@ -1,5 +1,4 @@
 # all data going to /glusterfs/users/metaknowledge/rawdata
-import xml.dom.pulldom
 import codecs
 import re
 import time
@@ -56,23 +55,14 @@ if __name__ == "__main__":
 
     # creating file for data output
     outputFile = codecs.lookup('utf-8')[-1](file(outputFileName, 'wb'))
-    # creating XML wrapper around our data
-    outputFile.write('<repository xmlns:oai_dc="http://www.openarchives.org/OAI/2.0/oai_dc/" \ xmlns:dc="http://purl.org/dc/elements/1.1/" \ xmlns:xsi="http://www.w3.org/2001/XMLSchema-instanc">\n')
 
     # getting our initial data
     data = getFile(fetchBase, fetchCommand)
-    # initializing count of records that we're getting
-    recordCount = 0
     
     # will loop while we're still getting data from the server
     while data:
-        events = xml.dom.pulldom.parseString(data)
-        for (event, node) in events:
-            if event == "START_ELEMENT" and node.tagName == 'record':
-                events.expandNode(node)
-                node.writexml(outputFile)
-                recordCount += 1
-                print "Now getting record number " + str(recordCount)
+        outputFile.write(data)
+        outputFile.write('\n')
         # parse resumption token from output
         resToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', data)
         # if we don't have the resumption token, we assume that we're done
@@ -82,6 +72,4 @@ if __name__ == "__main__":
         data = getFile(fetchBase, "&resumptionToken=%s" % resToken.group(1))
 
     # wrap and close our output file
-    outputFile.write('\n</repository>\n'), outputFile.close()
     print "\nRead %d bytes (%.2f compression)" % (nDataBytes, float(nDataBytes) / nRawBytes)
-    print "Wrote out %d records" % recordCount
