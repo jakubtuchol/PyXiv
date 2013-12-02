@@ -16,7 +16,7 @@ def getFile(fetchBase, command, verbose=1, sleepTime=0):
     remoteAddr = fetchBase + command
     # verbose option used primarily when getting HTTP error from server
     if verbose:
-        print "\r", "getFile ... '%s'" % remoteAddr[-90:]        
+        print "\r", "getFile '%s'" % remoteAddr[-90:]        
     try:
         remoteData = urllib2.urlopen(remoteAddr).read()
     except urllib2.HTTPError, exValue:
@@ -73,13 +73,13 @@ if __name__ == "__main__":
                 node.writexml(outputFile)
                 recordCount += 1
                 print "Now getting record number " + str(recordCount)
-                # parse resumption token from output
-                resToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', data)
-                # if we don't have the resumption token, we assume that we're done
-                if not resToken:
-                    break
-                # call OAI API using reumption token
-                data = getFile(fetchBase, "&resumptionToken=%s" % resToken.group(1))
+        # parse resumption token from output
+        resToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', data)
+        # if we don't have the resumption token, we assume that we're done
+        if not resToken:
+            break
+        # call OAI API using reumption token
+        data = getFile(fetchBase, "&resumptionToken=%s" % resToken.group(1))
 
     # wrap and close our output file
     outputFile.write('\n</repository>\n'), outputFile.close()
