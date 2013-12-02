@@ -1,3 +1,4 @@
+# all data going to /glusterfs/users/metaknowledge/rawdata
 import xml.dom.pulldom
 import codecs
 import re
@@ -5,7 +6,7 @@ import time
 import urllib2
 import zlib
 
-nDataBytes, nRawbytes, nRecoveries, maxRecoveries = 0, 0, 0, 3
+nDataBytes, nRawBytes, nRecoveries, maxRecoveries = 0, 0, 0, 3
 
 def getFile(fetchBase, command, verbose=1, sleepTime=0):
     global nRecoveries, nDataBytes, nRawBytes
@@ -24,7 +25,7 @@ def getFile(fetchBase, command, verbose=1, sleepTime=0):
             if retryWait < 0:
                 return None
             print 'Waiting %d seconds' % retryWait
-            return getFile(serverString, command, 0, retryWait)
+            return getFile(fetchBase, command, 0, retryWait)
         print exValue
         if nRecoveries < maxRecoveries:
             nRecoveries += 1
@@ -48,7 +49,7 @@ if __name__ == "__main__":
     # url base for what our data
     fetchBase = 'http://export.arxiv.org/oai2/request?verb=ListRecords'
     # our URL option-- will be replaced by resumption token in next iteration
-    fetchCommand = '&metadataPrefix=Arxiv'
+    fetchCommand = '&metadataPrefix=arXiv'
     # name for our output file
     outputFileName = 'metadata.xml'
     print "Writing records to %s from archive %s" % (outputFileName, fetchBase)
@@ -71,13 +72,14 @@ if __name__ == "__main__":
                 events.expandNode(node)
                 node.writexml(outputFile)
                 recordCount += 1
+                print "Now getting record number " + str(recordCount)
                 # parse resumption token from output
                 resToken = re.search('<resumptionToken[^>]*>(.*)</resumptionToken>', data)
                 # if we don't have the resumption token, we assume that we're done
                 if not resToken:
                     break
                 # call OAI API using reumption token
-                data = getFile(fetchBase, "&resumptionToken=%s" % mo.group(1))
+                data = getFile(fetchBase, "&resumptionToken=%s" % resToken.group(1))
 
     # wrap and close our output file
     outputFile.write('\n</repository>\n'), outputFile.close()
