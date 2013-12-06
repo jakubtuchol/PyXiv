@@ -1,9 +1,9 @@
 # all data going to /glusterfs/users/metaknowledge/rawdata
-import codecs
-import re
-import time
-import urllib2
-import zlib
+import codecs   # used for creating output file
+import re       # used for parsing timeout errors and resumptionTokens
+import time     # to be used for sleeping 
+import urllib2  # used for fetching data
+import zlib     # used for checking compression levels
 
 nDataBytes, nRawBytes, nRecoveries, maxRecoveries = 0, 0, 0, 3
 
@@ -18,14 +18,18 @@ def getFile(fetchBase, command, verbose=1, sleepTime=0):
         print "\r", "getFile '%s'" % remoteAddr[-90:]        
     try:
         remoteData = urllib2.urlopen(remoteAddr).read()
+    # checking for and handling HTTP error
     except urllib2.HTTPError, exValue:
         if exValue.code == 503:
+            # parse data to check how long wants us to wait
             retryWait = int(exValue.hdrs.get("Retry-After", "-1"))
             if retryWait < 0:
                 return None
             print 'Waiting %d seconds' % retryWait
             return getFile(fetchBase, command, 0, retryWait)
         print exValue
+        # if server keeps continually failing, we stop trying
+        # otherwise, keep trying with new timeout and verbosity set
         if nRecoveries < maxRecoveries:
             nRecoveries += 1
             return getFile(fetchBase, command, 1, 60)
@@ -45,7 +49,7 @@ def getFile(fetchBase, command, verbose=1, sleepTime=0):
         return remoteData
 
 if __name__ == "__main__":
-    # url base for what our data
+    # url base for arXiv data location
     fetchBase = 'http://export.arxiv.org/oai2/request?verb=ListRecords'
     # our URL option-- will be replaced by resumption token in next iteration
     fetchCommand = '&metadataPrefix=arXiv'
