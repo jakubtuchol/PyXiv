@@ -69,7 +69,7 @@ def getDate(fetchBase, commandPrefix, date, outputFile):
         if not resToken:
             break
         # call OAI API using reumption token
-        data = getFile(fetchBase, "&resumptionToken=%s" % resToken.group(1))
+        dataChunk = getFile(fetchBase, "&resumptionToken=%s" % resToken.group(1))
     outputFile.close()
     print "Finished writing " + date
 
@@ -108,7 +108,7 @@ if __name__ == "__main__":
             print "We're fetching these dates: " + dateCommand
             
             # creating our output file-- will have a separate output file for each mont
-            outputFileName = str(year) + monthBound + '.xml'
+            outputFileName = str(year) + '-' + monthBound + '.xml'
             print "Writing records to %s from archive %s" % (outputFileName, fetchBase)
             outputFile = codecs.lookup('utf-8')[-1](file(outputFileName, 'wb'))
             
