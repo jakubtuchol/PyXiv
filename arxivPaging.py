@@ -10,6 +10,8 @@ import re       # used for parsing timeout errors and resumptionTokens
 import time     # to be used for sleeping 
 import urllib2  # used for fetching data
 import zlib     # used for checking compression levels
+from calendar import monthrange # to be used for getting the number of days in a given month
+from datetime import datetime, date
 
 nDataBytes, nRawBytes, nRecoveries, maxRecoveries = 0, 0, 0, 3
 
@@ -73,46 +75,49 @@ def getDate(fetchBase, commandPrefix, date, outputFile):
     outputFile.close()
     print "Finished writing " + date
 
+def valid_date(datestring):
+    try:
+        datetime.strptime(datestring, '%Y-%m')
+        return True
+    except ValueError:
+        return False
+
 if __name__ == "__main__":
+    # prompt the user to enter in a start date
+    beginDateString = raw_input("Please enter in the month you would like to BEGIN downloading from, in 'YYYY-MM' format: ")
+    # check if the user has input an properly formatted date
+    while (not valid_date(beginDateString)):
+        beginDateString = raw_input("Please make sure your input is in 'YYYY-MM' format, using only digits for the year and month: ")
+    # once we have a properly formatted start date, create a date object for the start date
+    startDate = datetime.strptime(beginDateString, '%Y-%m').date()
+    
+    # prompt the user to enter in an end date
+    endDateString = raw_input("Please enter in the last month you would like to download, in 'YYYY-MM' format: ")
+    # check if the user has input an properly formatted date
+    while (not valid_date(endDateString)):
+        endDateString = raw_input("Please make sure your input is in 'YYYY-MM' format, using only digits for the year and month: ")
+    # reconstruct the end date to reflect the last day of the given month
+    initialEndDate = datetime.strptime(endDateString, '%Y-%m').date()
+    endDay = monthrange(initialEndDate.year, initialEndDate.month)[1]
+    endDate = datetime.date(initialEndDate.year, initialEndDate.month, endDay)
+    
     # url base for arXiv data location
     fetchBase = 'http://export.arxiv.org/oai2/request?verb=ListRecords'
     # our URL base option-- will be replaced by resumption token if necessary
     fetchPrefix = '&metadataPrefix=arXiv'
-    months = range(1,13)
-    years = [2011, 2012]
-    # initializing a nested loop over the years and months
-    # this loop will first construct our argument commands, and then 
-    # call the getDate function, which will construct an output file
-    # and proceed to query the database with the given arguments until 
-    # it cannot find a resumptionToken
-    for year in years:
-        for month in months:
-            # need to construct a proper double-digit month
-            if month < 10:
-                monthBound = '0' + str(month)
-            else:
-                monthBound = str(month)
-            # setting value for upper bound of day for any given mont
-            if (month % 2 == 1):
-                endDay = 31
-            # gott deal with February
-            elif (month == 2):
-                # 2012 is a leap year
-                if (year == 2012):
-                    endDay = 29
-                else:
-                    endDay = 28
-            # constructing date specification for OAI command
-            dateCommand = '&from=' + str(year) + '-' + monthBound + '-01&until=' + str(year) + '-' + monthBound + '-' + str(endDay)
-            # printing date: for debugging purposes
-            print "We're fetching these dates: " + dateCommand
+    
+    # constructing the OAI command for specific start and end time for dates
+    dateCommand = '&from=' + startDate.isoformat() + '&until=' + endDate.isoformat()
+    print "We're fetching data from " + startDate.isoformat() + " until " + endDate.isoformat()
+    
+    # creating a file to write this data to, labeled by the start and end dates
+    outputFileName = startDate.isoformat() + "_to_" + endDate.isoformat()
+    print "Writing records to %s from archive %s" % (outputFileName, fetchBase)
+    outputFile = codecs.lookup('utf-8')[-1](file(outputFileName, 'wb'))
+    
+    # fetching the data
+    getDate(fetchBase, fetchPrefix, dateCommand, outputFile)
+    print "\nRead %d bytes (%.2f compression)" % (nDataBytes, float(nDataBytes) / nRawBytes)
+    print "Finished getting data"        
             
-            # creating our output file-- will have a separate output file for each mont
-            outputFileName = str(year) + '-' + monthBound + '.xml'
-            print "Writing records to %s from archive %s" % (outputFileName, fetchBase)
-            outputFile = codecs.lookup('utf-8')[-1](file(outputFileName, 'wb'))
-            
-            getDate(fetchBase, fetchPrefix, dateCommand, outputFile)
-            print "\nRead %d bytes (%.2f compression)" % (nDataBytes, float(nDataBytes) / nRawBytes)
-    print "Finished getting data"
     
