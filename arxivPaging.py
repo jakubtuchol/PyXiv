@@ -1,8 +1,7 @@
 '''
-This script will serve as a proof of concept for arxiv paging
-We will be paging the arXiv servers for papers dating between
-January 2011 and December 2012, and will save each of the 
-returns in individual files.
+This script allows a user to input a start and end date,
+and will download all metadata dating between those two
+dates, inclusive
 '''
 # all data going to /glusterfs/users/metaknowledge/rawdata
 import codecs   # used for creating output file
@@ -11,7 +10,7 @@ import time     # to be used for sleeping
 import urllib2  # used for fetching data
 import zlib     # used for checking compression levels
 from calendar import monthrange # to be used for getting the number of days in a given month
-from datetime import datetime, date
+from datetime import datetime, date # to be used for handling the start and end dates
 
 nDataBytes, nRawBytes, nRecoveries, maxRecoveries = 0, 0, 0, 3
 
@@ -99,9 +98,9 @@ if __name__ == "__main__":
     # reconstruct the end date to reflect the last day of the given month
     initialEndDate = datetime.strptime(endDateString, '%Y-%m').date()
     endDay = monthrange(initialEndDate.year, initialEndDate.month)[1]
-    endDate = datetime.date(initialEndDate.year, initialEndDate.month, endDay)
+    endDate = date(initialEndDate.year, initialEndDate.month, endDay)
     
-    # url base for arXiv data location
+     # url base for arXiv data location
     fetchBase = 'http://export.arxiv.org/oai2/request?verb=ListRecords'
     # our URL base option-- will be replaced by resumption token if necessary
     fetchPrefix = '&metadataPrefix=arXiv'
@@ -111,7 +110,7 @@ if __name__ == "__main__":
     print "We're fetching data from " + startDate.isoformat() + " until " + endDate.isoformat()
     
     # creating a file to write this data to, labeled by the start and end dates
-    outputFileName = startDate.isoformat() + "_to_" + endDate.isoformat()
+    outputFileName = startDate.isoformat() + "_to_" + endDate.isoformat() + ".xml"
     print "Writing records to %s from archive %s" % (outputFileName, fetchBase)
     outputFile = codecs.lookup('utf-8')[-1](file(outputFileName, 'wb'))
     
